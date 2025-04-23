@@ -5,6 +5,7 @@ import {Routes, Route} from 'react-router-dom'
 import Favourite from './pages/Favourite'
 import Navbar from './Components/Navbar';
 import { MovieProvider } from './context/MovieContext';
+import Footer from './Components/Footer';
 
 function App() {
   return (
@@ -16,6 +17,7 @@ function App() {
       <Route path="/favourites" element={<Favourite/>} />
       </Routes>
     </main>
+    <Footer/>
     </MovieProvider>
   
   );
