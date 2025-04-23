@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import "../css/Favorites.css";
 import { useMovieContext } from '../context/MovieContext';
-import MovieCard from '../components/MovieCard';
+import MovieCard from '../Components/MovieCard';
 
 function Favorites() {
   const { favorites, removeFromFavorite } = useMovieContext();
