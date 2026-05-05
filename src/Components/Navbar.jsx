@@ -1,70 +1,54 @@
-import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link, useLocation } from 'react-router-dom';
+import { useMovieContext } from '../context/MovieContext';
 import "../css/Navbar.css";
 
 function Navbar() {
-  const [isScrolled, setIsScrolled] = useState(false);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [open, setOpen] = useState(false);
+  const { favorites } = useMovieContext();
+  const location = useLocation();
 
-  // Handle scroll effect
-  useEffect(() => {
-    const handleScroll = () => {
-      if (window.scrollY > 20) {
-        setIsScrolled(true);
-      } else {
-        setIsScrolled(false);
-      }
-    };
+  useEffect(() => { setOpen(false); }, [location]);
 
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
-
-  // Toggle mobile menu
-  const toggleMobileMenu = () => {
-    setIsMobileMenuOpen(!isMobileMenuOpen);
-  };
+  const isActive = (path) => location.pathname === path;
 
   return (
-    <nav className={`navbar ${isScrolled ? 'navbar-scrolled' : ''}`}>
-      <div className="navbar-container">
-        {/* Logo/Brand */}
-        <div className="navbar-brand">
-          <Link to="/">
-            <span className="navbar-logo">🎬</span>
-            <span>FredFlix</span>
+    <nav className="navbar">
+      <div className="navbar-inner">
+
+        <Link to="/" className="navbar-logo">
+          <span className="logo-fred">Fred</span>
+          <span className="logo-flix">flix</span>
+          <div className="logo-dot" />
+        </Link>
+
+        <div className="navbar-links">
+          <Link to="/" className={`nav-link ${isActive('/') ? 'active' : ''}`}>
+            Home
+          </Link>
+          <Link to="/favourites" className={`nav-link ${isActive('/favourites') ? 'active' : ''}`}>
+            Favourites
+            {favorites.length > 0 && (
+              <span className="fav-count">{favorites.length}</span>
+            )}
           </Link>
         </div>
 
-        {/* Desktop Navigation Links */}
-        <div className="navbar-links">
-          <Link to="/" className="nav-link">Home</Link>
-          <Link to="/favourites" className="nav-link">Favourites</Link>
-        </div>
-
-        {/* Mobile Menu Toggle */}
-        <div className="mobile-menu-toggle" onClick={toggleMobileMenu}>
-          <div className={`hamburger ${isMobileMenuOpen ? 'active' : ''}`}>
-            <span></span>
-            <span></span>
-            <span></span>
-          </div>
-        </div>
+        <button
+          className={`hamburger ${open ? 'open' : ''}`}
+          onClick={() => setOpen(!open)}
+          aria-label="Menu"
+        >
+          <span /><span /><span />
+        </button>
       </div>
 
-      {/* Mobile Menu */}
-      {isMobileMenuOpen && (
-        <div className="mobile-menu">
-          <div className="mobile-links">
-            <Link to="/" className="mobile-link" onClick={() => setIsMobileMenuOpen(false)}>
-              Home
-            </Link>
-            <Link to="/favourites" className="mobile-link" onClick={() => setIsMobileMenuOpen(false)}>
-              Favourites
-            </Link>
-            {/* <Link to="/nsfw" className="mobile-link" onClick={() => setIsMobileMenuOpen(false)}>NSFW</Link> */}
-
-          </div>
+      {open && (
+        <div className="mobile-nav">
+          <Link to="/" className="mobile-nav-link">Home</Link>
+          <Link to="/favourites" className="mobile-nav-link">
+            Favourites {favorites.length > 0 && `(${favorites.length})`}
+          </Link>
         </div>
       )}
     </nav>

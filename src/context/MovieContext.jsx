@@ -1,50 +1,26 @@
 import { createContext, useState, useEffect, useContext } from "react";
 
-// Create the context
 const MovieContext = createContext();
-
-// Custom hook to use the context
 export const useMovieContext = () => useContext(MovieContext);
 
 export const MovieProvider = ({ children }) => {
   const [favorites, setFavorites] = useState(() => {
-    // Initialize favorites from localStorage on component mount
-    const storedFavorites = localStorage.getItem("favorites");
-    return storedFavorites ? JSON.parse(storedFavorites) : [];
+    try { return JSON.parse(localStorage.getItem("favorites") || "[]"); }
+    catch { return []; }
   });
 
-  // Update localStorage whenever favorites change
   useEffect(() => {
     localStorage.setItem('favorites', JSON.stringify(favorites));
   }, [favorites]);
 
-  const addToFavorites = (movie) => {
-    setFavorites(prev => {
-      // Check if movie already exists in favorites to prevent duplicates
-      if (prev.some(m => m.id === movie.id)) {
-        return prev;
-      }
-      return [...prev, movie];
-    });
-  };
-
-  const removeFromFavorite = (movieId) => {
-    setFavorites(prev => prev.filter(movie => movie.id !== movieId));
-  };
-
-  const isFavorite = (movieId) => {
-    return favorites.some(movie => movie.id === movieId);
-  };
-
-  const value = {
-    favorites,
-    addToFavorites,
-    removeFromFavorite,
-    isFavorite
-  };
+  const addToFavorites    = (movie) => setFavorites(prev =>
+    prev.some(m => m.id === movie.id) ? prev : [...prev, movie]
+  );
+  const removeFromFavorite = (id) => setFavorites(prev => prev.filter(m => m.id !== id));
+  const isFavorite         = (id) => favorites.some(m => m.id === id);
 
   return (
-    <MovieContext.Provider value={value}>
+    <MovieContext.Provider value={{ favorites, addToFavorites, removeFromFavorite, isFavorite }}>
       {children}
     </MovieContext.Provider>
   );

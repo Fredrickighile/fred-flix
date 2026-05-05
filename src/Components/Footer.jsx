@@ -1,15 +1,13 @@
-import React from "react";
 import "../css/Footer.css";
 
 function Footer() {
   return (
     <footer className="footer">
-      <p>
-        &copy; {new Date().getFullYear()} FredFlix | Contact:{" "}
-        <a href="mailto:fredrickighile@gmail.com" className="footer-email">
-          fredrickighile@gmail.com
-        </a>
-      </p>
+      <span className="footer-logo">Fredflix</span>
+      &nbsp;·&nbsp;
+      built by Fred
+      &nbsp;·&nbsp;
+      <a href="mailto:fredrickighile@gmail.com">fredrickighile@gmail.com</a>
     </footer>
   );
 }

@@ -1,86 +1,82 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import "../css/Favorites.css";
 import { useMovieContext } from '../context/MovieContext';
 import MovieCard from '../Components/MovieCard';
 
 function Favorites() {
   const { favorites, removeFromFavorite } = useMovieContext();
+  const [sort, setSort] = useState('added');
 
-  const [sortOrder, setSortOrder] = useState('added'); // 'added', 'title', 'rating'
-  
-  const getSortedFavorites = () => {
-    if (!favorites || favorites.length === 0) return [];
-    
-    const sortedList = [...favorites];
-    
-    switch(sortOrder) {
-      case 'title':
-        return sortedList.sort((a, b) => a.title.localeCompare(b.title));
-      case 'rating':
-        return sortedList.sort((a, b) => b.vote_average - a.vote_average);
-      case 'added':
-      default:
-        return sortedList; // Assuming the list is already in order of addition
+  const getSorted = () => {
+    const list = [...(favorites || [])];
+    if (sort === 'title')  return list.sort((a, b) => (a.title || a.name || '').localeCompare(b.title || b.name || ''));
+    if (sort === 'rating') return list.sort((a, b) => (b.vote_average || 0) - (a.vote_average || 0));
+    return list;
+  };
+
+  const handleClear = () => {
+    if (window.confirm('Remove all saved titles?')) {
+      favorites.forEach(m => removeFromFavorite(m.id));
     }
   };
-  
-  const handleClearAll = () => {
-    if (window.confirm('Are you sure you want to remove all favorites?')) {
-      favorites.forEach(movie => removeFromFavorite(movie.id));
-    }
-  };
-  
-  if (favorites && favorites.length > 0) {
-    const sortedFavorites = getSortedFavorites();
-    
+
+  if (!favorites?.length) {
     return (
       <div className="favorites">
-        <div className="favorites-header">
-          <h2>Your Favorites</h2>
-          <p className="favorites-count">{favorites.length} movie{favorites.length !== 1 ? 's' : ''}</p>
+        <div className="fav-hero">
+          <p className="fav-eyebrow">Your collection</p>
+          <h1 className="fav-title">Saved titles</h1>
         </div>
-        
-        <div className="favorites-controls">
-          <div className="sort-controls">
-            <label htmlFor="sort-select">Sort by:</label>
-            <select 
-              id="sort-select"
-              value={sortOrder}
-              onChange={(e) => setSortOrder(e.target.value)}
-              className="sort-select"
-            >
-              <option value="added">Recently Added</option>
-              <option value="title">Title (A-Z)</option>
-              <option value="rating">Rating (High to Low)</option>
-            </select>
-          </div>
-          
-          <button onClick={handleClearAll} className="clear-favorites-btn">
-            Clear All
-          </button>
-        </div>
-        
-        <div className="movies-grid">
-          {sortedFavorites.map((movie, index) => (
-            <div 
-              className="favorite-card-wrapper" 
-              key={movie.id}
-              style={{ animationDelay: `${index * 0.05}s` }}
-            >
-              <MovieCard movie={movie} key={movie.id} />
-            </div>
-          ))}
+        <div className="fav-empty">
+          <span className="empty-glyph">❤</span>
+          <h2>Nothing saved yet</h2>
+          <p>Browse films and series, then tap the heart to save them here.</p>
+          <a href="/" className="browse-btn">Start browsing</a>
         </div>
       </div>
     );
   }
-  
+
+  const sorted = getSorted();
+  const fireCount = favorites.filter(m => (m.vote_average || 0) >= 8).length;
+
   return (
-    <div className="favorites-empty">
-      <div className="empty-icon">❤️</div>
-      <h2>No favorite movies yet</h2>
-      <p>Start adding movies to your favorites and they will appear here.</p>
-      <a href="/" className="browse-movies-btn">Browse Popular Movies</a>
+    <div className="favorites">
+      <div className="fav-hero">
+        <p className="fav-eyebrow">Your collection</p>
+        <h1 className="fav-title">Saved titles</h1>
+        <p className="fav-subtitle">
+          {favorites.length} saved &nbsp;·&nbsp; {fireCount} must-watch
+        </p>
+      </div>
+
+      <hr className="fav-divider" />
+
+      <div className="fav-controls">
+        <div className="sort-controls">
+          <span className="sort-lbl">Sort by</span>
+          {[['added','Recently added'],['title','A–Z'],['rating','Rating']].map(([val, label]) => (
+            <button
+              key={val}
+              className={`sort-btn ${sort === val ? 'active' : ''}`}
+              onClick={() => setSort(val)}
+            >{label}</button>
+          ))}
+        </div>
+        <button className="clear-btn" onClick={handleClear}>Clear all</button>
+      </div>
+
+      <div className="movies-grid">
+        {sorted.map((movie, i) => (
+          <div
+            key={movie.id}
+            className="fav-card-wrap"
+            style={{ animationDelay: `${i * 0.04}s` }}
+          >
+            <MovieCard movie={movie} />
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

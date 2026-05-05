@@ -1,134 +1,185 @@
 import MovieCard from "../Components/MovieCard";
 import { useState, useEffect } from "react";
-import { SearchMovies, getPopularMovies } from "../services/api"
+import {
+  getPopularMovies, SearchMovies, getMoviesByGenre,
+  getPopularTV, SearchTV, getTVByGenre,
+} from "../services/api";
 import "../css/Home.css";
 
+const MOVIE_MOODS = [
+  { label: "Action",    genre: 28    },
+  { label: "Comedy",    genre: 35    },
+  { label: "Horror",    genre: 27    },
+  { label: "Drama",     genre: 18    },
+  { label: "Sci-Fi",    genre: 878   },
+  { label: "Thriller",  genre: 53    },
+  { label: "Animation", genre: 16    },
+  { label: "Romance",   genre: 10749 },
+];
+
+const TV_MOODS = [
+  { label: "Action",    genre: 10759 },
+  { label: "Comedy",    genre: 35    },
+  { label: "Crime",     genre: 80    },
+  { label: "Drama",     genre: 18    },
+  { label: "Sci-Fi",    genre: 10765 },
+  { label: "Mystery",   genre: 9648  },
+  { label: "Animation", genre: 16    },
+  { label: "Reality",   genre: 10764 },
+];
+
 function Home() {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [movies, setMovies] = useState([]);
-  const [error, setError] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [searchPerformed, setSearchPerformed] = useState(false);
+  const [type,      setType]      = useState('movie');
+  const [query,     setQuery]     = useState('');
+  const [movies,    setMovies]    = useState([]);
+  const [loading,   setLoading]   = useState(true);
+  const [error,     setError]     = useState(null);
+  const [activeMood,setActiveMood]= useState(null);
+  const [searched,  setSearched]  = useState(false);
 
-  useEffect(() => {
-    const loadPopularMovies = async () => {
-      try {
-        const popularMovies = await getPopularMovies();
-        setMovies(popularMovies);
-      } catch (err) {
-        console.error("Error loading popular movies:", err);
-        setError("Failed to load movies. Please try again later.");
-      } finally {
-        setLoading(false);
-      }
-    };
+  const moods = type === 'movie' ? MOVIE_MOODS : TV_MOODS;
 
-    loadPopularMovies();
-  }, []);
+  useEffect(() => { loadTrending(); }, [type]);
 
-  const handleSearch = async (e) => {
-    e.preventDefault();
-    if (!searchQuery.trim()) return;
-    if (loading) return;
-
+  const loadTrending = async () => {
     setLoading(true);
-    setSearchPerformed(true);
-    
+    setActiveMood(null);
+    setSearched(false);
+    setQuery('');
+    setError(null);
     try {
-      const searchResults = await SearchMovies(searchQuery);
-      setMovies(searchResults);
-      setError(null);
-    } catch (err) {
-      console.error("Error searching movies:", err);
-      setError("Failed to search movies. Please try again later.");
+      const data = type === 'movie' ? await getPopularMovies() : await getPopularTV();
+      setMovies(data);
+    } catch {
+      setError('Could not load titles. Check your API key.');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleClearSearch = () => {
-    setSearchQuery("");
-    setSearchPerformed(false);
+  const handleSearch = async (e) => {
+    e.preventDefault();
+    if (!query.trim() || loading) return;
     setLoading(true);
-    
-    // Reload popular movies
-    getPopularMovies()
-      .then(popularMovies => {
-        setMovies(popularMovies);
-        setError(null);
-      })
-      .catch(err => {
-        console.error("Error reloading popular movies:", err);
-        setError("Failed to load movies. Please try again later.");
-      })
-      .finally(() => {
-        setLoading(false);
-      });
+    setSearched(true);
+    setActiveMood(null);
+    setError(null);
+    try {
+      const data = type === 'movie'
+        ? await SearchMovies(query)
+        : await SearchTV(query);
+      setMovies(data);
+    } catch {
+      setError('Search failed. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
+
+  const handleMood = async (mood) => {
+    if (activeMood === mood.genre) { loadTrending(); return; }
+    setLoading(true);
+    setActiveMood(mood.genre);
+    setSearched(false);
+    setQuery('');
+    setError(null);
+    try {
+      const data = type === 'movie'
+        ? await getMoviesByGenre(mood.genre)
+        : await getTVByGenre(mood.genre);
+      setMovies(data);
+    } catch {
+      setError('Could not load this genre.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const sectionLabel = searched
+    ? `Results for "${query}"`
+    : activeMood
+    ? (moods.find(m => m.genre === activeMood)?.label ?? 'Genre') + (type === 'tv' ? ' Series' : ' Films')
+    : type === 'movie' ? 'Trending films' : 'Trending series';
 
   return (
     <div className="home">
-      <div className="home-header">
-        <h1 className="home-title">Movie Explorer</h1>
-        <p className="home-subtitle">
-          {searchPerformed 
-            ? `Search results for "${searchQuery}"` 
-            : "Discover popular movies"}
-        </p>
-      </div>
+      <div className="home-hero">
+        <p className="home-eyebrow">Your personal cinema guide</p>
+        <h1 className="home-title">
+          Know before<br />you <em>watch.</em>
+        </h1>
+        <p className="home-sub">Every title rated honestly. No more 2-hour regrets.</p>
 
-      <form onSubmit={handleSearch} className="search-form">
-        <div className="search-input-container">
+        {/* Movies / Series toggle */}
+        <div className="type-toggle">
+          <button
+            className={`type-btn ${type === 'movie' ? 'active' : ''}`}
+            onClick={() => setType('movie')}
+          >Films</button>
+          <button
+            className={`type-btn ${type === 'tv' ? 'active' : ''}`}
+            onClick={() => setType('tv')}
+          >Series</button>
+        </div>
+
+        {/* Search */}
+        <form onSubmit={handleSearch} className="search-form">
           <input
-            type="text"
-            placeholder="Search for movies..."
             className="search-input"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            aria-label="Search movies"
+            type="text"
+            placeholder={type === 'movie' ? 'Search any film…' : 'Search any series…'}
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
           />
-          {searchQuery && (
-            <button 
-              type="button" 
-              className="clear-search-button"
-              onClick={() => setSearchQuery("")}
-              aria-label="Clear search"
-            >
-              ×
-            </button>
+          {query && (
+            <button type="button" className="search-clear" onClick={() => setQuery('')}>×</button>
           )}
-        </div>
-        <button type="submit" className="search-button" disabled={loading || !searchQuery.trim()}>
-          {loading ? "Searching..." : "Search"}
-        </button>
-        {searchPerformed && (
-          <button type="button" className="reset-button" onClick={handleClearSearch}>
-            Show Popular
+          <button type="submit" className="search-btn" disabled={loading || !query.trim()}>
+            Search
           </button>
-        )}
-      </form>
+        </form>
 
-      {error && (
-        <div className="error-message" role="alert">
-          <span className="error-icon">⚠️</span> {error}
-        </div>
-      )}
-
-      {loading ? (
-        <div className="loading-container">
-          <div className="loading-spinner"></div>
-          <p>Loading movies...</p>
-        </div>
-      ) : movies.length > 0 ? (
-        <div className="movies-grid">
-          {movies.map((movie) => (
-            <MovieCard movie={movie} key={movie.id} />
+        {/* Mood pills */}
+        <p className="moods-label">What are you in the mood for?</p>
+        <div className="moods-row">
+          {moods.map(m => (
+            <button
+              key={m.genre}
+              className={`mood-pill ${activeMood === m.genre ? 'active' : ''}`}
+              onClick={() => handleMood(m)}
+            >{m.label}</button>
           ))}
         </div>
-      ) : (
-        <div className="no-results">
-          <p>No movies found. Try a different search term.</p>
+      </div>
+
+      <hr className="home-divider" />
+
+      {error && <div className="error-bar">{error}</div>}
+
+      {loading ? (
+        <div className="loading-wrap">
+          <div className="spinner" />
+          <span>Loading…</span>
         </div>
+      ) : movies.length > 0 ? (
+        <>
+          <div className="section-head">
+            <span className="section-title">{sectionLabel}</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+              <span className="section-count">{movies.length} titles</span>
+              {(searched || activeMood) && (
+                <button className="reset-link" onClick={loadTrending}>
+                  Back to trending
+                </button>
+              )}
+            </div>
+          </div>
+          <div className="movies-grid">
+            {movies.map(m => <MovieCard movie={m} key={m.id} />)}
+          </div>
+        </>
+      ) : (
+        <div className="no-results">Nothing found. Try a different search.</div>
       )}
     </div>
   );
